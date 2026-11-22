@@ -164,6 +164,14 @@ browsers. No outside tracker is involved. Sending the package straight down the
 gateway channel stays as the fallback when there is no other seeder. How a
 browser loads code it received this way is open.
 
+Packages are content-addressed by their torrent infohash, so any cached copy
+can be verified and pinned to a version. A rich client that joined a table can
+keep the package and host that game at a later gathering, so an open game
+spreads through the rooms it is played in. A package declares whether it may
+be redistributed. One that may not is still played by everyone at the table,
+but it is cached only for that game and only a client that owns it can host
+it.
+
 ## Out of scope
 
 The lobby, discovery and transport layer gets its own design. Its first piece
