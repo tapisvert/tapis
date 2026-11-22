@@ -2,8 +2,9 @@
 
 A server-authoritative board-game engine. A host runs each table; players and
 spectators talk to it over a small gRPC service
-([`proto/tapis.proto`](proto/tapis.proto)), so a client can be a web page, a
-phone app, a terminal or a script.
+([`proto/tapis.proto`](proto/tapis.proto)), so a client can be a phone app, a
+terminal or a script. Plain browsers will reach the same tables through a
+websocket gateway on the host (designed, not built yet).
 
 A game is a handful of pure functions: `setup`, `act`, an optional `expire`
 for deadlines, a global scene, an optional per-seat local scene, and

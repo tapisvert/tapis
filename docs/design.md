@@ -110,10 +110,12 @@ player sends `tapis.start` with at least `minSeats` present.
  ------------------------------------------------------------------------
  engine (Table)      store, seats and tokens, deadlines, commit-reveal, diffs
  ------------------------------------------------------------------------
- host (gRPC)         tapis.v1.Table service over one listening port
+ host                tapis.v1.Table over gRPC, plus a websocket gateway
+                     carrying the same messages for plain browsers
  ------------------------------------------------------------------------
  lobby / discovery   finding a host, listing its tables, creating one
- transport           TCP on a LAN today; any HTTP/2 transport later
+ transport           gRPC over HTTP/2 for native clients; a websocket for
+                     browsers; TCP on a LAN today
 ```
 
 The engine stops at the host: give it an address and it serves. Everything
@@ -124,6 +126,33 @@ discovery it planned was never built. So a bare `host:port`, with a QR code of
 it on the global scene, is the floor tapis keeps; multicast discovery (mDNS or
 SSDP), lobbies, and getting game packages to a phone are new work with their
 own interface.
+
+## Devices and clients
+
+papan's model, which tapis keeps: one capable device at the table, a laptop or
+a tablet running Node or Electron, runs the host. Everyone else uses whatever
+is in their pocket. In papan that device served the web client over HTTP and
+bridged each browser to the game server through socket.io
+(`src/server/main-node.js`), or through Electron IPC for its own window
+(`src/server/main-electron.js`); both paths drove the same Node-side gRPC
+client (`src/server/game/client.js`). A richer client spoke gRPC directly.
+
+A browser cannot speak raw gRPC: page scripts get no access to HTTP/2 framing
+or trailers, and a page cannot accept connections at all. So the tapis host
+has two front doors onto the same tables (only the first is built so far):
+
+- **gRPC**, `tapis.v1.Table` as specified above, for native clients, other
+  hosts and scripts.
+- **A websocket gateway** carrying the same messages, the protobuf messages
+  of `tapis.proto` framed one per websocket message, for plain browsers. The
+  gateway is to call the same `Table` methods as the gRPC service, so the
+  two cannot drift apart.
+
+A game's presentation, the web components that draw its scenes, also has to
+reach a phone without a web server per game. papan fetched game packages over
+WebTorrent (`src/client/web-torrent.js`); tapis either does the same or sends
+the package over the gateway channel from the host, which already has it.
+Which of the two, and how a browser loads code it received that way, is open.
 
 ## Out of scope
 
