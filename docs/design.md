@@ -117,10 +117,13 @@ player sends `tapis.start` with at least `minSeats` present.
 ```
 
 The engine stops at the host: give it an address and it serves. Everything
-below the host line is left out of this document. Discovery on a LAN
-(mDNS or SSDP, with a QR code of the host address on the global scene for
-networks that block multicast), lobbies, and getting game packages to a phone
-are a separate piece of work with their own interface.
+below the host line is left out of this document, and discovery is an open
+question. papan never got past a typed URL: its proof of concept played a full
+game of tic-tac-toe across two laptops that way, and the SSDP and UPnP
+discovery it planned was never built. So a bare `host:port`, with a QR code of
+it on the global scene, is the floor tapis keeps; multicast discovery (mDNS or
+SSDP), lobbies, and getting game packages to a phone are new work with their
+own interface.
 
 ## Collaboration check
 
