@@ -48,8 +48,7 @@ design accepted a username, so anyone typing the same name took the seat.
 
 ### Commit-reveal for server-held secrets
 
-The host is often run by one of the players (the tablet owner, a laptop at the
-table), so a secret only the server knows, a deck order or a hidden code, needs
+The host runs on a player's device (whoever created the table), so a secret only the server knows, a deck order or a hidden code, needs
 to be checkable afterwards.
 
 - `ctx.commit(id, value)` stores a secret. Every watcher immediately receives
@@ -129,13 +128,19 @@ own interface.
 
 ## Devices and clients
 
-papan's model, which tapis keeps: one capable device at the table, a laptop or
-a tablet running Node or Electron, runs the host. Everyone else uses whatever
-is in their pocket. In papan that device served the web client over HTTP and
+Two kinds of client sit at a table. A rich client is the tapis app on a
+laptop, a tablet or a phone: Node or Electron, able to open sockets and accept
+connections. A plain client is a browser tab. In papan the capable device served the web client over HTTP and
 bridged each browser to the game server through socket.io
 (`src/server/main-node.js`), or through Electron IPC for its own window
 (`src/server/main-electron.js`); both paths drove the same Node-side gRPC
 client (`src/server/game/client.js`). A richer client spoke gRPC directly.
+
+tapis has no fixed host device. Whichever rich client creates a table hosts
+it. With ten people, four on rich clients and six on browsers, one rich client
+creates the game and hosts it, the six browsers join through its websocket
+gateway, and the other three rich clients play over gRPC and help deliver the
+game's files. Every rich client is a potential host and a seeder.
 
 A browser cannot speak raw gRPC: page scripts get no access to HTTP/2 framing
 or trailers, and a page cannot accept connections at all. So the tapis host
@@ -150,9 +155,14 @@ has two front doors onto the same tables (only the first is built so far):
 
 A game's presentation, the web components that draw its scenes, also has to
 reach a phone without a web server per game. papan fetched game packages over
-WebTorrent (`src/client/web-torrent.js`); tapis either does the same or sends
-the package over the gateway channel from the host, which already has it.
-Which of the two, and how a browser loads code it received that way, is open.
+WebTorrent (`src/client/web-torrent.js`), and tapis keeps that: the host and
+the other rich clients seed the package, and browsers join the swarm. A browser
+peer only talks WebRTC, which needs a tracker to find peers and a signalling
+channel to connect them, so the host's gateway does both: it is the WebTorrent
+tracker for its tables' packages and relays WebRTC signalling between
+browsers. No outside tracker is involved. Sending the package straight down the
+gateway channel stays as the fallback when there is no other seeder. How a
+browser loads code it received this way is open.
 
 ## Out of scope
 
