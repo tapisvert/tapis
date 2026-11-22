@@ -1,15 +1,15 @@
 # tapis design
 
-tapis runs board games. A host holds the authoritative state of each table,
+tapis runs board games. A host keeps the authoritative state of each table,
 players act through a small gRPC service, and every client, a browser page, a
 phone, a terminal or a program, sees the same stream of scene updates.
 
 It is a rewrite of [papan](https://github.com/grumpycoders/papan). It keeps the
 game model and drops the framework around it.
 
-## What carries over from papan
+## Kept from papan
 
-- **Server-authoritative.** Clients never compute game state. They send an
+- **Server-authoritative.** Clients do not compute game state. They send an
   action; the host runs the game's reducer and publishes the result.
 - **Reducers over a store.** papan wrapped each game in a redux store whose
   reducer called the game's `transition()`. tapis keeps that shape without
@@ -25,17 +25,17 @@ game model and drops the framework around it.
 - **Deadlines are data.** A reducer calls `ctx.setDeadline(id, ms)`; the
   absolute time is written to `store.deadlines`. When it falls due the host
   dispatches an `expire` event, which goes through the reducer like any other.
-  A timer is never game logic, so a replay needs no clock.
+  Timers are not game logic, so a replay needs no clock.
 - **Deltas.** papan sent deep-diff output wrapped in its own protobuf. tapis
   sends JSON Patch (RFC 6902), which every language already has a library for.
   The first update to a watcher is a snapshot; later ones patch the previous
   scene, and a scene that did not change is omitted.
 
-What does not carry over: Polymer, the IRC-style lobby mesh, the auth
+Dropped: Polymer, the IRC-style lobby mesh, the auth
 providers, the WebTorrent client layer. papan's game-server `Action` message
 was empty ("To be defined") and its `PRNG.range()` throws on every call (the
 argument check tests `typeof max === 'number'` where it means `!==`), so dice
-and shuffles never ran there; those parts are designed fresh.
+and shuffles did not work there; those parts are designed fresh.
 
 ## What is new
 
@@ -76,7 +76,7 @@ reveal" flag and salts that do not come from the seed.
 | `Describe` | game id and version, seat range, who sits where, phase |
 | `Join` | takes or reclaims a seat, returns the seat token |
 | `Watch` | server stream of `Update`: version, phase, global and local scene, new commitments and reveals, current deadlines, outcome, seats |
-| `Act` | runs an action for a seat; optional `expected_version` refuses a stale move |
+| `Act` | runs an action for a seat; optional `expected_version` rejects a stale move |
 
 Game data crosses the wire as JSON text inside the protobuf messages. The
 engine does not know any game's schema, and JSON is what every client reads.
@@ -113,7 +113,7 @@ player sends `tapis.start` with at least `minSeats` present.
  host (gRPC)         tapis.v1.Table service over one listening port
  ------------------------------------------------------------------------
  lobby / discovery   finding a host, listing its tables, creating one
- transport           TCP on a LAN today; anything that carries HTTP/2 later
+ transport           TCP on a LAN today; any HTTP/2 transport later
 ```
 
 The engine stops at the host: give it an address and it serves. Everything
@@ -140,7 +140,7 @@ Each game forces one engine piece:
 3. dots-and-boxes: a player moving again, turn order owned by the reducer
 4. Texas hold'em: three or more seats, phones beside a tablet, timers,
    reconnecting by seat token
-5. a deck-building co-op: cards nobody has seen, coordination between local
+5. a deck-building co-op: cards no player has seen, coordination between local
    scenes mid-turn, an effect stack
 
 ## Running
