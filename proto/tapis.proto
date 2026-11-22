@@ -1,0 +1,139 @@
+syntax = "proto3";
+
+package tapis.v1;
+
+// One table is one running game. A host process may run several tables.
+//
+// Every message that carries game data carries it as JSON text. The engine is
+// game-agnostic, so the schema of a game's state belongs to the game, and JSON
+// is the one encoding every client language already reads.
+service Table {
+  // Static facts about a table: which game, how many seats, who sits where.
+  rpc Describe(DescribeRequest) returns (TableInfo);
+
+  // Take a seat. The reply carries the seat token, the only credential that
+  // can later act for that seat or read its local scene. Joining again with
+  // the token returns the same seat (reconnect after a phone sleeps).
+  rpc Join(JoinRequest) returns (JoinReply);
+
+  // Stream of scene updates. The first message is a full snapshot at the
+  // current version, every later one is a patch against the previous version.
+  // Without a seat token the caller is a spectator and sees the global scene
+  // only.
+  rpc Watch(WatchRequest) returns (stream Update);
+
+  // Submit an action for a seat. The engine runs the game's reducer; the
+  // result reaches every watcher as an Update.
+  rpc Act(ActRequest) returns (ActReply);
+}
+
+message DescribeRequest {
+  string table_id = 1;
+}
+
+message SeatInfo {
+  int32 seat = 1;
+  string name = 2;      // empty when the seat is free
+  bool connected = 3;
+}
+
+message TableInfo {
+  string table_id = 1;
+  string game_id = 2;       // e.g. "connect4"
+  string game_version = 3;
+  int32 min_seats = 4;
+  int32 max_seats = 5;
+  repeated SeatInfo seats = 6;
+  Phase phase = 7;
+}
+
+enum Phase {
+  PHASE_UNSPECIFIED = 0;
+  PHASE_WAITING = 1;   // seats still open, game not started
+  PHASE_PLAYING = 2;
+  PHASE_FINISHED = 3;
+}
+
+message JoinRequest {
+  string table_id = 1;
+  string name = 2;
+  string seat_token = 3;   // set to reclaim a seat; empty for a new seat
+}
+
+message JoinReply {
+  int32 seat = 1;
+  string seat_token = 2;
+}
+
+message WatchRequest {
+  string table_id = 1;
+  string seat_token = 2;   // empty = spectator
+}
+
+// A JSON Patch (RFC 6902) operation. value_json is JSON text, empty for
+// "remove".
+message PatchOp {
+  string op = 1;           // "add" | "remove" | "replace"
+  string path = 2;         // JSON Pointer (RFC 6901)
+  string value_json = 3;
+}
+
+message Scene {
+  oneof body {
+    string snapshot_json = 1;     // whole scene
+    PatchList patch = 2;          // against the previous version of this scene
+  }
+}
+
+message PatchList {
+  repeated PatchOp ops = 1;
+}
+
+// A commitment to a value the server holds and the players cannot see yet:
+// hash = SHA-256 over (salt bytes || canonical JSON of the value), hex.
+message Commitment {
+  string id = 1;
+  string hash_hex = 2;
+}
+
+message Reveal {
+  string id = 1;
+  string salt_hex = 2;
+  string value_json = 3;
+}
+
+message Deadline {
+  string id = 1;
+  int64 at_unix_ms = 2;
+}
+
+message Outcome {
+  repeated int32 winners = 1;   // empty with draw = true for a draw
+  bool draw = 2;
+}
+
+message Update {
+  int64 version = 1;
+  Phase phase = 2;
+  Scene global = 3;
+  Scene local = 4;                     // absent for spectators
+  repeated Commitment commitments = 5; // new since the previous update
+  repeated Reveal reveals = 6;         // new since the previous update
+  repeated Deadline deadlines = 7;     // the full current set
+  Outcome outcome = 8;                 // set once phase is FINISHED
+  repeated SeatInfo seats = 9;         // the full current set
+}
+
+message ActRequest {
+  string table_id = 1;
+  string seat_token = 2;
+  string action = 3;        // game-defined action name
+  string args_json = 4;     // game-defined arguments, JSON
+  int64 expected_version = 5; // 0 = any; otherwise rejected if stale
+}
+
+message ActReply {
+  bool accepted = 1;
+  string error = 2;         // set when not accepted
+  int64 version = 3;        // table version after the action
+}

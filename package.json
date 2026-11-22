@@ -1,0 +1,30 @@
+{
+  "name": "@tapisvert/tapis",
+  "version": "0.1.0",
+  "description": "Server-authoritative board-game engine with a gRPC interface",
+  "license": "MIT",
+  "type": "module",
+  "main": "dist/src/index.js",
+  "types": "dist/src/index.d.ts",
+  "exports": {
+    ".": "./dist/src/index.js",
+    "./proto/tapis.proto": "./proto/tapis.proto"
+  },
+  "files": ["dist/src", "proto", "src"],
+  "engines": { "node": ">=22.18" },
+  "scripts": {
+    "build": "tsc -p .",
+    "check": "tsc -p . --noEmit",
+    "test": "node --test test/*.test.ts",
+    "prepare": "tsc -p ."
+  },
+  "repository": { "type": "git", "url": "git+https://github.com/tapisvert/tapis.git" },
+  "dependencies": {
+    "@grpc/grpc-js": "^1.12.0",
+    "@grpc/proto-loader": "^0.7.13"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "typescript": "^5.8.0"
+  }
+}
