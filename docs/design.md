@@ -125,14 +125,11 @@ it on the global scene, is the floor tapis keeps; multicast discovery (mDNS or
 SSDP), lobbies, and getting game packages to a phone are new work with their
 own interface.
 
-## Collaboration check
+## Out of scope
 
-The lobby, discovery and transport layer is Nicolas Noble's ground: he
-designed papan's lobby mesh and its peer-to-peer package distribution, so I am
-not designing it here. The first piece of it, once this interface is fixed, is
-LAN discovery: a host advertising its `tapis.v1.Table` endpoint and a client
-finding it, with the engine and connect4 as the test bed. The rest of that
-layer waits on what the first piece teaches.
+The lobby, discovery and transport layer gets its own design. Its first piece
+is LAN discovery: a host advertising its `tapis.v1.Table` endpoint and a client
+finding it, with the engine and connect4 as the test bed.
 
 ## Ladder
 
